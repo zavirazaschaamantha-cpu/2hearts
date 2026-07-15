@@ -31,8 +31,37 @@
   50% { transform: scale(1.1); }
 }
 
+@keyframes float-slow {
+  0%, 100% { transform: translate(0px, 0px) scale(1); }
+  33% { transform: translate(30px, -40px) scale(1.1); }
+  66% { transform: translate(-20px, 20px) scale(0.9); }
+}
+
+@keyframes float-delayed {
+  0%, 100% { transform: translate(0px, 0px) scale(1); }
+  33% { transform: translate(-30px, 30px) scale(0.95); }
+  66% { transform: translate(40px, -20px) scale(1.1); }
+}
+
+@keyframes float-medium {
+  0%, 100% { transform: translate(0px, 0px) scale(1) rotate(0deg); }
+  50% { transform: translate(20px, -20px) scale(1.05) rotate(180deg); }
+}
+
 .animate-heart-throb {
   animation: heart-throb 1.8s infinite ease-in-out;
+}
+
+.animate-float-slow {
+  animation: float-slow 15s infinite ease-in-out;
+}
+
+.animate-float-delayed {
+  animation: float-delayed 18s infinite ease-in-out;
+}
+
+.animate-float-medium {
+  animation: float-medium 12s infinite ease-in-out;
 }
 
 /* Custom scrollbar to keep it look lofi and clean */

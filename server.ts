@@ -105,7 +105,7 @@ Gunakan Bahasa Indonesia yang santai, manis, penuh empati, dan menyentuh hati.`;
           }
         }
       }),
-      4000
+      15000
     );
 
     if (response.text) {
@@ -278,7 +278,7 @@ Berikan 4 pilihan jawaban yang lucu dan relevan, sertakan indeks jawaban yang be
           }
         }
       }),
-      4000
+      15000
     );
 
     if (response.text) {
@@ -422,7 +422,7 @@ Gunakan Bahasa Indonesia yang kasual, hangat, penuh semangat, dan interaktif.`;
           }
         }
       }),
-      4000
+      15000
     );
 
     if (response.text) {

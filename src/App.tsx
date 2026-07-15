@@ -86,6 +86,90 @@ export default function App() {
   // "playground" (Games / Quizzes), "messages" (Sticky notes & Love Capsules), "dates" (AI Date Planner), "settings"
   const [activeTab, setActiveTab] = useState<"playground" | "messages" | "dates" | "settings">("playground");
 
+  // Vibe Theme for colourful personalization
+  const [vibeTheme, setVibeTheme] = useState<"candy" | "sunset" | "aurora" | "retro">(() => {
+    const saved = localStorage.getItem("duahati_vibe_theme");
+    return (saved as any) || "candy";
+  });
+
+  useEffect(() => {
+    localStorage.setItem("duahati_vibe_theme", vibeTheme);
+  }, [vibeTheme]);
+
+  // Color theme helpers
+  const getBgGradientClass = () => {
+    switch (vibeTheme) {
+      case "sunset":
+        return "bg-gradient-to-br from-[#1c080e] via-[#3d0f20] to-[#2b1406]";
+      case "aurora":
+        return "bg-gradient-to-br from-[#02091c] via-[#052233] to-[#140b2b]";
+      case "retro":
+        return "bg-gradient-to-br from-[#0b031c] via-[#21022e] to-[#010e24]";
+      case "candy":
+      default:
+        return "bg-gradient-to-br from-[#0f0414] via-[#240630] to-[#041426]";
+    }
+  };
+
+  const getCardClass = () => {
+    switch (vibeTheme) {
+      case "sunset":
+        return "bg-black/35 backdrop-blur-2xl border border-rose-500/30 hover:border-rose-500/50 shadow-[0_10px_30px_rgba(239,68,68,0.1)] transition-all duration-300";
+      case "aurora":
+        return "bg-black/35 backdrop-blur-2xl border border-cyan-500/30 hover:border-cyan-500/50 shadow-[0_10px_30px_rgba(6,182,212,0.1)] transition-all duration-300";
+      case "retro":
+        return "bg-black/45 backdrop-blur-2xl border-2 border-[#ff007f]/40 hover:border-[#ff007f]/70 shadow-[0_10px_30px_rgba(255,0,127,0.15)] transition-all duration-300";
+      case "candy":
+      default:
+        return "bg-white/10 backdrop-blur-2xl border border-white/20 hover:border-pink-500/30 shadow-[0_10px_30px_rgba(236,72,153,0.1)] transition-all duration-300";
+    }
+  };
+
+  const getPrimaryBtnClass = () => {
+    switch (vibeTheme) {
+      case "sunset":
+        return "bg-gradient-to-r from-rose-500 via-orange-500 to-amber-500 hover:from-rose-600 hover:to-amber-600 text-white shadow-lg shadow-rose-500/20";
+      case "aurora":
+        return "bg-gradient-to-r from-cyan-500 via-teal-500 to-emerald-500 hover:from-cyan-600 hover:to-emerald-600 text-white shadow-lg shadow-cyan-500/20";
+      case "retro":
+        return "bg-gradient-to-r from-[#ff007f] via-[#c200d8] to-[#7f00ff] hover:from-[#e60072] hover:to-[#6f00e6] text-white shadow-lg shadow-fuchsia-500/25";
+      case "candy":
+      default:
+        return "bg-gradient-to-r from-pink-500 via-fuchsia-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white shadow-lg shadow-pink-500/20";
+    }
+  };
+
+  const getHighlightTextClass = () => {
+    switch (vibeTheme) {
+      case "sunset":
+        return "text-amber-400";
+      case "aurora":
+        return "text-emerald-400";
+      case "retro":
+        return "text-[#ff007f]";
+      case "candy":
+      default:
+        return "text-pink-400";
+    }
+  };
+
+  const getTabActiveClass = (tabName: string) => {
+    if (activeTab === tabName) {
+      switch (vibeTheme) {
+        case "sunset":
+          return "bg-gradient-to-r from-rose-500 to-amber-500 text-white font-semibold shadow-lg shadow-rose-500/25 scale-105";
+        case "aurora":
+          return "bg-gradient-to-r from-cyan-500 to-emerald-500 text-white font-semibold shadow-lg shadow-cyan-500/25 scale-105";
+        case "retro":
+          return "bg-gradient-to-r from-[#ff007f] to-[#7f00ff] text-white font-semibold shadow-lg shadow-fuchsia-500/25 scale-105";
+        case "candy":
+        default:
+          return "bg-gradient-to-r from-pink-500 to-purple-500 text-white font-semibold shadow-lg shadow-pink-500/25 scale-105";
+      }
+    }
+    return "hover:bg-white/5 opacity-80 hover:opacity-100";
+  };
+
   // Dynamic Clocks for both partners
   const [timeA, setTimeA] = useState("");
   const [timeB, setTimeB] = useState("");
@@ -160,6 +244,7 @@ export default function App() {
   const [quizFinished, setQuizFinished] = useState(false);
   const [loadingQuiz, setLoadingQuiz] = useState(false);
   const [answeredCount, setAnsweredCount] = useState(0);
+  const [isQuizFallback, setIsQuizFallback] = useState(false);
 
   const fetchNewQuiz = async (topicName: string) => {
     setLoadingQuiz(true);
@@ -180,12 +265,15 @@ export default function App() {
       const resData = await response.json();
       if (resData.success && resData.data && resData.data.length > 0) {
         setQuizzes(resData.data);
+        setIsQuizFallback(!!resData.isFallback);
       } else {
         setQuizzes(DEFAULT_TRIVIA);
+        setIsQuizFallback(true);
       }
     } catch (err) {
       console.error(err);
       setQuizzes(DEFAULT_TRIVIA);
+      setIsQuizFallback(true);
     } finally {
       setLoadingQuiz(false);
     }
@@ -292,6 +380,7 @@ export default function App() {
   const [currentDeepIndex, setCurrentDeepIndex] = useState(0);
   const [isCardFlipped, setIsCardFlipped] = useState(false);
   const [loadingDeep, setLoadingDeep] = useState(false);
+  const [isDeepFallback, setIsDeepFallback] = useState(false);
 
   const fetchDeepTalk = async (category: string, tone: string) => {
     setLoadingDeep(true);
@@ -309,12 +398,15 @@ export default function App() {
       const resData = await response.json();
       if (resData.success && resData.data && resData.data.length > 0) {
         setDeepTalkCards(resData.data);
+        setIsDeepFallback(!!resData.isFallback);
       } else {
         setDeepTalkCards(DEFAULT_DEEPTALK);
+        setIsDeepFallback(true);
       }
     } catch (err) {
       console.error(err);
       setDeepTalkCards(DEFAULT_DEEPTALK);
+      setIsDeepFallback(true);
     } finally {
       setLoadingDeep(false);
     }
@@ -328,6 +420,7 @@ export default function App() {
   const [timeDiffMode, setTimeDiffMode] = useState("Sama / Mirip");
   const [dateIdeas, setDateIdeas] = useState<VirtualDate[]>([]);
   const [loadingDates, setLoadingDates] = useState(false);
+  const [isDateFallback, setIsDateFallback] = useState(false);
 
   const fetchDateIdeas = async () => {
     setLoadingDates(true);
@@ -343,9 +436,11 @@ export default function App() {
       const resData = await response.json();
       if (resData.success && resData.data) {
         setDateIdeas(resData.data);
+        setIsDateFallback(!!resData.isFallback);
       }
     } catch (err) {
       console.error(err);
+      setIsDateFallback(true);
     } finally {
       setLoadingDates(false);
     }
@@ -463,61 +558,109 @@ export default function App() {
     )
   );
 
+  // Dynamic background orb colors based on selected vibeTheme
+  let orb1Color = "bg-purple-600";
+  let orb2Color = "bg-pink-500";
+  let orb3Color = "bg-blue-500";
+  let orb4Color = "bg-rose-500";
+
+  if (vibeTheme === "sunset") {
+    orb1Color = "bg-rose-600";
+    orb2Color = "bg-orange-500";
+    orb3Color = "bg-amber-500";
+    orb4Color = "bg-red-500";
+  } else if (vibeTheme === "aurora") {
+    orb1Color = "bg-cyan-500";
+    orb2Color = "bg-emerald-500";
+    orb3Color = "bg-teal-500";
+    orb4Color = "bg-indigo-600";
+  } else if (vibeTheme === "retro") {
+    orb1Color = "bg-[#ff007f]";
+    orb2Color = "bg-[#7f00ff]";
+    orb3Color = "bg-yellow-400";
+    orb4Color = "bg-cyan-400";
+  }
+
   return (
-    <div className="min-h-screen bg-[#100e1c] text-white font-sans overflow-x-hidden relative flex flex-col selection:bg-pink-500 selection:text-white">
+    <div className={`min-h-screen ${getBgGradientClass()} text-white font-sans overflow-x-hidden relative flex flex-col selection:bg-pink-500 selection:text-white transition-all duration-700`}>
       
       {/* Background Glowing Ambient Orbs */}
       <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-[-10%] left-[-10%] w-[45vw] h-[45vw] bg-purple-600 rounded-full blur-[130px] opacity-25"></div>
-        <div className="absolute bottom-[-10%] right-[-10%] w-[50vw] h-[50vw] bg-pink-500 rounded-full blur-[140px] opacity-20"></div>
-        <div className="absolute top-[25%] right-[15%] w-[35vw] h-[35vw] bg-blue-500 rounded-full blur-[120px] opacity-15"></div>
-        <div className="absolute bottom-[30%] left-[10%] w-[30vw] h-[30vw] bg-rose-500 rounded-full blur-[110px] opacity-10"></div>
+        <div className={`absolute top-[-10%] left-[-10%] w-[45vw] h-[45vw] ${orb1Color} rounded-full blur-[130px] opacity-30 animate-float-slow`}></div>
+        <div className={`absolute bottom-[-10%] right-[-10%] w-[50vw] h-[50vw] ${orb2Color} rounded-full blur-[140px] opacity-25 animate-float-delayed`}></div>
+        <div className={`absolute top-[25%] right-[15%] w-[35vw] h-[35vw] ${orb3Color} rounded-full blur-[120px] opacity-20 animate-float-medium`}></div>
+        <div className={`absolute bottom-[30%] left-[10%] w-[30vw] h-[30vw] ${orb4Color} rounded-full blur-[110px] opacity-15 animate-float-slow`}></div>
       </div>
 
       {/* HEADER / NAVIGATION BAR */}
-      <nav id="app-nav" className="z-10 px-6 py-4 flex flex-col md:flex-row justify-between items-center bg-white/5 backdrop-blur-md border-b border-white/10 sticky top-0">
-        <div className="flex items-center gap-3 mb-4 md:mb-0">
+      <nav id="app-nav" className="z-10 px-6 py-4 flex flex-col xl:flex-row justify-between items-center bg-white/5 backdrop-blur-md border-b border-white/10 sticky top-0 gap-4">
+        <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-gradient-to-tr from-pink-500 to-purple-500 rounded-xl flex items-center justify-center shadow-lg animate-heart-throb">
             <Heart className="w-6 h-6 text-white fill-white" />
           </div>
           <div>
             <span className="text-2xl font-bold tracking-tight font-outfit">
-              Dua<span className="text-pink-400">Hati</span>
+              Dua<span className={getHighlightTextClass()}>Hati</span>
             </span>
             <span className="text-[10px] block opacity-60 tracking-wider font-mono">LDR LOVE HUBS</span>
           </div>
         </div>
 
         {/* Navigation Tabs */}
-        <div className="flex gap-1 md:gap-4 text-sm font-medium bg-black/30 p-1.5 rounded-2xl border border-white/5 mb-4 md:mb-0">
+        <div className="flex flex-wrap justify-center gap-1 md:gap-2.5 text-sm font-medium bg-black/40 p-1.5 rounded-2xl border border-white/10">
           <button 
             id="tab-playground"
             onClick={() => setActiveTab("playground")}
-            className={`px-4 py-2 rounded-xl transition-all duration-300 ${activeTab === "playground" ? "bg-gradient-to-r from-pink-500 to-purple-500 text-white font-semibold shadow-lg" : "hover:bg-white/5 opacity-80 hover:opacity-100"}`}
+            className={`px-4 py-2 rounded-xl transition-all duration-300 ${getTabActiveClass("playground")}`}
           >
             🎮 Hub Bermain
           </button>
           <button 
             id="tab-messages"
             onClick={() => setActiveTab("messages")}
-            className={`px-4 py-2 rounded-xl transition-all duration-300 ${activeTab === "messages" ? "bg-gradient-to-r from-pink-500 to-purple-500 text-white font-semibold shadow-lg" : "hover:bg-white/5 opacity-80 hover:opacity-100"}`}
+            className={`px-4 py-2 rounded-xl transition-all duration-300 ${getTabActiveClass("messages")}`}
           >
             💌 Surat & Memo
           </button>
           <button 
             id="tab-dates"
             onClick={() => setActiveTab("dates")}
-            className={`px-4 py-2 rounded-xl transition-all duration-300 ${activeTab === "dates" ? "bg-gradient-to-r from-pink-500 to-purple-500 text-white font-semibold shadow-lg" : "hover:bg-white/5 opacity-80 hover:opacity-100"}`}
+            className={`px-4 py-2 rounded-xl transition-all duration-300 ${getTabActiveClass("dates")}`}
           >
             ✨ Ide Kencan AI
           </button>
           <button 
             id="tab-settings"
             onClick={() => setActiveTab("settings")}
-            className={`px-4 py-2 rounded-xl transition-all duration-300 ${activeTab === "settings" ? "bg-gradient-to-r from-pink-500 to-purple-500 text-white font-semibold shadow-lg" : "hover:bg-white/5 opacity-80 hover:opacity-100"}`}
+            className={`px-4 py-2 rounded-xl transition-all duration-300 ${getTabActiveClass("settings")}`}
           >
             ⚙️ Pengaturan
           </button>
+        </div>
+
+        {/* Dynamic Vibe / Color Theme Picker */}
+        <div className="flex items-center gap-2 bg-black/40 px-3.5 py-1.5 rounded-full border border-white/10 text-xs">
+          <span className="opacity-70 text-[10px] uppercase font-bold tracking-widest mr-1 text-pink-200">VIBE WANNA:</span>
+          <button 
+            onClick={() => setVibeTheme("candy")} 
+            className={`w-6 h-6 rounded-full bg-gradient-to-r from-pink-500 to-purple-500 border-2 transition-all ${vibeTheme === "candy" ? "border-white scale-110 shadow-lg ring-2 ring-pink-500" : "border-transparent opacity-60 hover:opacity-100 hover:scale-105"}`}
+            title="Candy Love"
+          />
+          <button 
+            onClick={() => setVibeTheme("sunset")} 
+            className={`w-6 h-6 rounded-full bg-gradient-to-r from-rose-500 to-amber-500 border-2 transition-all ${vibeTheme === "sunset" ? "border-white scale-110 shadow-lg ring-2 ring-rose-500" : "border-transparent opacity-60 hover:opacity-100 hover:scale-105"}`}
+            title="Sunset Romance"
+          />
+          <button 
+            onClick={() => setVibeTheme("aurora")} 
+            className={`w-6 h-6 rounded-full bg-gradient-to-r from-cyan-400 to-emerald-400 border-2 transition-all ${vibeTheme === "aurora" ? "border-white scale-110 shadow-lg ring-2 ring-cyan-500" : "border-transparent opacity-60 hover:opacity-100 hover:scale-105"}`}
+            title="Midnight Aurora"
+          />
+          <button 
+            onClick={() => setVibeTheme("retro")} 
+            className={`w-6 h-6 rounded-full bg-gradient-to-r from-fuchsia-500 to-indigo-500 border-2 transition-all ${vibeTheme === "retro" ? "border-white scale-110 shadow-lg ring-2 ring-fuchsia-500" : "border-transparent opacity-60 hover:opacity-100 hover:scale-105"}`}
+            title="Neon Retro"
+          />
         </div>
 
         {/* Level Counter and Status Quick Info */}
@@ -552,7 +695,7 @@ export default function App() {
         <section id="connection-metrics" className="col-span-12 lg:col-span-3 flex flex-col gap-6">
           
           {/* Circular Sync Rate & Live Status Widget */}
-          <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl p-6 flex flex-col items-center text-center rose-glow">
+          <div className={`${getCardClass()} rounded-3xl p-6 flex flex-col items-center text-center rose-glow`}>
             <span className="text-xs uppercase tracking-widest text-pink-300 font-bold mb-4">SINKRONISASI CINTA</span>
             
             <div className="relative w-36 h-36 mb-4">
@@ -600,7 +743,7 @@ export default function App() {
           </div>
 
           {/* TWO WORLD CLOCKS WITH INDONESIAN & OTHER TIMEPORTS */}
-          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-5 flex flex-col gap-4">
+          <div className={`${getCardClass()} rounded-3xl p-5 flex flex-col gap-4`}>
             <h3 className="text-xs font-bold uppercase tracking-widest text-pink-400 flex items-center gap-1.5">
               <Clock className="w-4 h-4" /> WAKTU KITA BERDUA
             </h3>
@@ -636,7 +779,7 @@ export default function App() {
           </div>
 
           {/* PRESENCE & MOOD SYNCHRONIZER (LIVE FOR LDR VIBE) */}
-          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-5 flex flex-col gap-4">
+          <div className={`${getCardClass()} rounded-3xl p-5 flex flex-col gap-4`}>
             <h3 className="text-xs font-bold uppercase tracking-widest text-indigo-400 flex items-center gap-1.5">
               <Smile className="w-4 h-4" /> SINYAL SUASANA HATI
             </h3>
@@ -739,7 +882,7 @@ export default function App() {
               <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
                 
                 {/* Panel Roulette Spinner (Cols 7) */}
-                <div className="md:col-span-7 bg-white/10 backdrop-blur-2xl border border-white/20 rounded-[32px] p-6 flex flex-col">
+                <div className={`md:col-span-7 ${getCardClass()} rounded-[32px] p-6 flex flex-col`}>
                   <div className="flex justify-between items-start mb-4">
                     <div>
                       <h3 className="text-xl font-bold font-outfit text-white flex items-center gap-2">
@@ -780,34 +923,44 @@ export default function App() {
                             const x2 = 50 + 50 * Math.cos((endAngle - 90) * Math.PI / 180);
                             const y2 = 50 + 50 * Math.sin((endAngle - 90) * Math.PI / 180);
                             
-                            // Alternate beautiful colors
+                            // Alternate beautiful, vibrant, and highly colourful slice colors
                             const fillColors = [
-                              "#E07A5F", "#8B4F40", "#F2CC8F", "#81B29A", 
-                              "#ec4899", "#8b5cf6", "#3b82f6", "#14b8a6"
+                              "#FF3366", // Neon pink-red
+                              "#FF6600", // Bright neon orange
+                              "#FFCC00", // Sunny bright yellow
+                              "#33CC33", // Vivid lime green
+                              "#00CCCC", // Neon turquoise
+                              "#3366FF", // Electric cobalt blue
+                              "#9933FF", // Electric purple
+                              "#FF00CC"  // Hot magenta
                             ];
                             const color = fillColors[i % fillColors.length];
+
+                            const segmentEmojis = ["🎤", "🤳", "🍿", "✍️", "👀", "📱", "💬", "🎵"];
+                            const emoji = segmentEmojis[i] || "❤️";
 
                             return (
                               <g key={i}>
                                 <path 
                                   d={`M 50 50 L ${x1} ${y1} A 50 50 0 0 1 ${x2} ${y2} Z`} 
                                   fill={color} 
-                                  opacity="0.25"
-                                  stroke="rgba(255,255,255,0.15)"
-                                  strokeWidth="0.5"
+                                  opacity="0.85"
+                                  stroke="#100e1c"
+                                  strokeWidth="0.75"
                                 />
                                 {/* Cute mini icons along the circle */}
                                 <text 
-                                  x={50 + 35 * Math.cos((startAngle + 22.5 - 90) * Math.PI / 180)}
-                                  y={50 + 35 * Math.sin((startAngle + 22.5 - 90) * Math.PI / 180)}
+                                  x={50 + 33 * Math.cos((startAngle + 22.5 - 90) * Math.PI / 180)}
+                                  y={50 + 33 * Math.sin((startAngle + 22.5 - 90) * Math.PI / 180)}
                                   fill="#ffffff"
-                                  fontSize="4.5"
+                                  fontSize="6.5"
                                   fontWeight="bold"
                                   textAnchor="middle"
                                   dominantBaseline="middle"
-                                  transform={`rotate(${startAngle + 22.5}, ${50 + 35 * Math.cos((startAngle + 22.5 - 90) * Math.PI / 180)}, ${50 + 35 * Math.sin((startAngle + 22.5 - 90) * Math.PI / 180)})`}
+                                  transform={`rotate(${startAngle + 22.5}, ${50 + 33 * Math.cos((startAngle + 22.5 - 90) * Math.PI / 180)}, ${50 + 33 * Math.sin((startAngle + 22.5 - 90) * Math.PI / 180)})`}
+                                  className="drop-shadow-[0_1.5px_2px_rgba(0,0,0,0.8)] font-sans"
                                 >
-                                  {i + 1}
+                                  {emoji}
                                 </text>
                               </g>
                             );
@@ -822,7 +975,7 @@ export default function App() {
                       <button
                         onClick={spinTheWheel}
                         disabled={isSpinning}
-                        className="w-full bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-bold py-3.5 px-6 rounded-2xl shadow-lg transition-transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                        className={`w-full text-white font-bold py-3.5 px-6 rounded-2xl transition-transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed text-sm ${getPrimaryBtnClass()}`}
                       >
                         {isSpinning ? "🎰 SEDANG BERPUTAR..." : "🎡 PUTAR SEKARANG!"}
                       </button>
@@ -940,7 +1093,7 @@ export default function App() {
                     <div className="flex gap-3 justify-center">
                       <button
                         onClick={() => fetchNewQuiz(quizTopic)}
-                        className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-bold py-3 px-6 rounded-xl text-xs flex items-center gap-1.5"
+                        className={`text-white font-bold py-3 px-6 rounded-xl text-xs flex items-center gap-1.5 ${getPrimaryBtnClass()}`}
                       >
                         <RotateCcw className="w-4 h-4" /> Ulangi Kuis
                       </button>
@@ -962,6 +1115,12 @@ export default function App() {
                     
                     {/* Question and Option Selection (Cols 7) */}
                     <div className="lg:col-span-7 space-y-6">
+                      {isQuizFallback && (
+                        <div className="bg-amber-500/10 border border-amber-500/20 text-amber-300 text-[11px] px-3.5 py-2.5 rounded-xl flex items-center gap-1.5 leading-tight">
+                          <span>💡</span>
+                          <span>Menampilkan kuis offline pre-curated DuaHati karena server sedang sibuk.</span>
+                        </div>
+                      )}
                       <div className="flex justify-between items-center text-xs text-white/50">
                         <span>Kategori: <strong className="text-pink-300">{quizTopic}</strong></span>
                         <span>Pertanyaan {currentQuizIndex + 1} dari {quizzes.length}</span>
@@ -1160,7 +1319,7 @@ export default function App() {
               </div>
 
               {/* GAME ROW 3: DEEP TALK GENERATOR (INTERACTIVE REFLECTIVE) */}
-              <div className="bg-white/10 backdrop-blur-2xl border border-white/20 rounded-[36px] p-6 md:p-8">
+              <div className={`${getCardClass()} rounded-[36px] p-6 md:p-8`}>
                 
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
                   <div>
@@ -1226,6 +1385,12 @@ export default function App() {
                     ) : (
                       <>
                         <div className="space-y-6">
+                          {isDeepFallback && (
+                            <div className="bg-amber-500/10 border border-amber-500/20 text-amber-300 text-[11px] px-3.5 py-2.5 rounded-xl flex items-center gap-1.5 leading-tight">
+                              <span>💡</span>
+                              <span>Menampilkan kartu deep talk buatan tim DuaHati secara offline karena server sibuk.</span>
+                            </div>
+                          )}
                           <div className="flex justify-between items-center text-[10px] text-white/40">
                             <span className="uppercase tracking-widest font-bold text-pink-300">Kategori: {deepTalkCards[currentDeepIndex]?.category || deepTalkCategory}</span>
                             <span>Pertanyaan {currentDeepIndex + 1} dari {deepTalkCards.length}</span>
@@ -1310,7 +1475,7 @@ export default function App() {
             <div className="flex flex-col gap-6">
               
               {/* STICKY NOTES BOARD */}
-              <div className="bg-white/10 backdrop-blur-2xl border border-white/20 rounded-[36px] p-6 md:p-8">
+              <div className={`${getCardClass()} rounded-[36px] p-6 md:p-8`}>
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
                   <div>
                     <span className="text-xs font-bold text-pink-300 uppercase tracking-widest block mb-1">DINDING MEMO</span>
@@ -1409,7 +1574,7 @@ export default function App() {
               </div>
 
               {/* TIME CAPSULE LOVE LETTERS SECTION */}
-              <div className="bg-white/10 backdrop-blur-2xl border border-white/20 rounded-[36px] p-6 md:p-8">
+              <div className={`${getCardClass()} rounded-[36px] p-6 md:p-8`}>
                 
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                   {/* Left Column: Create love capsule letter (Cols 5) */}
@@ -1478,7 +1643,7 @@ export default function App() {
 
                       <button
                         type="submit"
-                        className="w-full bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-bold py-2.5 px-4 rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-md mt-2"
+                        className={`w-full text-white font-bold py-2.5 px-4 rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-md mt-2 ${getPrimaryBtnClass()}`}
                       >
                         <Lock className="w-3.5 h-3.5" /> Gembok & Simpan Kapsul
                       </button>
@@ -1617,7 +1782,7 @@ export default function App() {
           {/* TAB 3: AI VIRTUAL DATE IDEAS */}
           {activeTab === "dates" && (
             <div className="flex flex-col gap-6">
-              <div className="bg-white/10 backdrop-blur-2xl border border-white/20 rounded-[36px] p-6 md:p-8">
+              <div className={`${getCardClass()} rounded-[36px] p-6 md:p-8`}>
                 
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 pb-6 border-b border-white/10">
                   <div>
@@ -1631,7 +1796,7 @@ export default function App() {
                   <button
                     onClick={fetchDateIdeas}
                     disabled={loadingDates}
-                    className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-bold py-2.5 px-6 rounded-xl text-xs flex items-center gap-1.5 shadow-lg"
+                    className={`text-white font-bold py-2.5 px-6 rounded-xl text-xs flex items-center gap-1.5 shadow-lg ${getPrimaryBtnClass()}`}
                   >
                     <Sparkles className="w-4 h-4" /> Cari Ide Kencan Baru
                   </button>
@@ -1683,6 +1848,12 @@ export default function App() {
                       </div>
                     ) : (
                       <div className="space-y-4">
+                        {isDateFallback && (
+                          <div className="bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs px-4 py-3.5 rounded-2xl flex items-center gap-2.5 leading-relaxed">
+                            <span>💡</span>
+                            <span>Model AI sedang mengalami trafik tinggi atau kunci belum terkonfigurasi. Kami menampilkan templat rencana kencan berkualitas tinggi buatan tim kami untuk kalian berdua!</span>
+                          </div>
+                        )}
                         {dateIdeas.map((idea, i) => (
                           <div 
                             key={i} 
@@ -1724,7 +1895,7 @@ export default function App() {
 
           {/* TAB 4: CONFIGURATION / SETTINGS */}
           {activeTab === "settings" && (
-            <div className="bg-white/10 backdrop-blur-2xl border border-white/20 rounded-[36px] p-6 md:p-8">
+            <div className={`${getCardClass()} rounded-[36px] p-6 md:p-8`}>
               <span className="text-xs font-bold text-pink-300 uppercase tracking-widest block mb-1">KONFIGURASI PASANGAN</span>
               <h3 className="text-2xl font-bold font-outfit text-white mb-6">
                 ⚙️ Pengaturan Hub Cinta
@@ -1862,7 +2033,7 @@ export default function App() {
                 </button>
                 <button
                   onClick={() => setActiveTab("playground")}
-                  className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-bold px-6 py-2.5 rounded-xl text-xs shadow-md"
+                  className={`text-white font-bold px-6 py-2.5 rounded-xl text-xs shadow-md ${getPrimaryBtnClass()}`}
                 >
                   Selesai & Mulai Main!
                 </button>
