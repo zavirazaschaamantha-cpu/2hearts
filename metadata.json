@@ -1,0 +1,6 @@
+{
+  "name": "DuaHati",
+  "description": "Platform interaktif bertema hangat untuk pasangan LDR, lengkap dengan permainan trivia personal, roda tantangan AI, dan deep talk generator.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
