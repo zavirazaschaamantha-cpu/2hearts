@@ -174,6 +174,9 @@ export default function App() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ topic: topicName })
       });
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
       const resData = await response.json();
       if (resData.success && resData.data && resData.data.length > 0) {
         setQuizzes(resData.data);
@@ -300,6 +303,9 @@ export default function App() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ category, tone })
       });
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
       const resData = await response.json();
       if (resData.success && resData.data && resData.data.length > 0) {
         setDeepTalkCards(resData.data);
@@ -331,6 +337,9 @@ export default function App() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ vibes: dateVibe, timeDifference: timeDiffMode })
       });
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
       const resData = await response.json();
       if (resData.success && resData.data) {
         setDateIdeas(resData.data);

@@ -11,16 +11,45 @@ const PORT = 3000;
 
 app.use(express.json());
 
+// API Key Validation Helper
+function isValidGeminiApiKey(key: string | undefined): boolean {
+  if (!key) return false;
+  const trimmed = key.trim();
+  if (
+    trimmed === "" ||
+    trimmed === "MY_GEMINI_API_KEY" ||
+    trimmed === "your_api_key_here" ||
+    trimmed === "MOCK_KEY" ||
+    trimmed.includes("PLACEHOLDER") ||
+    trimmed.includes("YOUR_")
+  ) {
+    return false;
+  }
+  return trimmed.startsWith("AIzaSy") || trimmed.length >= 30;
+}
+
+// Request Timeout Wrapper Helper (default 5 seconds)
+async function runWithTimeout<T>(promise: Promise<T>, ms: number = 5000): Promise<T> {
+  let timeoutId: NodeJS.Timeout;
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => {
+      reject(new Error("Request timeout"));
+    }, ms);
+  });
+  try {
+    return await Promise.race([promise, timeoutPromise]);
+  } finally {
+    clearTimeout(timeoutId!);
+  }
+}
+
 // Lazy-initialize Gemini AI client safely
 let aiClient: GoogleGenAI | null = null;
 function getGeminiClient(): GoogleGenAI {
   if (!aiClient) {
     const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      console.warn("WARNING: GEMINI_API_KEY is not set. Using mock fallbacks for AI generation.");
-    }
     aiClient = new GoogleGenAI({
-      apiKey: apiKey || "MOCK_KEY",
+      apiKey: isValidGeminiApiKey(apiKey) ? apiKey : "MOCK_KEY",
       httpOptions: {
         headers: {
           'User-Agent': 'aistudio-build',
@@ -50,31 +79,34 @@ Gunakan Bahasa Indonesia yang santai, manis, penuh empati, dan menyentuh hati.`;
 
   try {
     const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      throw new Error("Missing API Key");
+    if (!isValidGeminiApiKey(apiKey)) {
+      throw new Error("Invalid or Missing API Key");
     }
 
     const ai = getGeminiClient();
-    const response = await ai.models.generateContent({
-      model: "gemini-3.5-flash",
-      contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.ARRAY,
-          description: "Daftar kartu pertanyaan deep talk untuk pasangan LDR",
-          items: {
-            type: Type.OBJECT,
-            properties: {
-              question: { type: Type.STRING, description: "Pertanyaan utama yang mendalam" },
-              followUp: { type: Type.STRING, description: "Pertanyaan lanjutan atau tips untuk mendalami obrolan" },
-              category: { type: Type.STRING, description: "Nama kategori" },
-            },
-            required: ["question", "followUp", "category"]
+    const response = await runWithTimeout(
+      ai.models.generateContent({
+        model: "gemini-3.5-flash",
+        contents: prompt,
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.ARRAY,
+            description: "Daftar kartu pertanyaan deep talk untuk pasangan LDR",
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                question: { type: Type.STRING, description: "Pertanyaan utama yang mendalam" },
+                followUp: { type: Type.STRING, description: "Pertanyaan lanjutan atau tips untuk mendalami obrolan" },
+                category: { type: Type.STRING, description: "Nama kategori" },
+              },
+              required: ["question", "followUp", "category"]
+            }
           }
         }
-      }
-    });
+      }),
+      4000
+    );
 
     if (response.text) {
       const data = JSON.parse(response.text.trim());
@@ -83,7 +115,7 @@ Gunakan Bahasa Indonesia yang santai, manis, penuh empati, dan menyentuh hati.`;
     throw new Error("No response text from Gemini");
 
   } catch (error: any) {
-    console.error("Gemini Deep Talk Error:", error.message);
+    console.error("Gemini Deep Talk Error:", error?.message || error || "Unknown error");
     // Safe High-Quality Fallbacks in Indonesian
     const fallbackData = {
       "Masa Depan": [
@@ -215,36 +247,39 @@ Berikan 4 pilihan jawaban yang lucu dan relevan, sertakan indeks jawaban yang be
 
   try {
     const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      throw new Error("Missing API Key");
+    if (!isValidGeminiApiKey(apiKey)) {
+      throw new Error("Invalid or Missing API Key");
     }
 
     const ai = getGeminiClient();
-    const response = await ai.models.generateContent({
-      model: "gemini-3.5-flash",
-      contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.ARRAY,
-          description: "Daftar pertanyaan kuis cinta trivia",
-          items: {
-            type: Type.OBJECT,
-            properties: {
-              question: { type: Type.STRING, description: "Pertanyaan kuis" },
-              options: {
-                type: Type.ARRAY,
-                items: { type: Type.STRING },
-                description: "4 pilihan jawaban (opsi)"
+    const response = await runWithTimeout(
+      ai.models.generateContent({
+        model: "gemini-3.5-flash",
+        contents: prompt,
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.ARRAY,
+            description: "Daftar pertanyaan kuis cinta trivia",
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                question: { type: Type.STRING, description: "Pertanyaan kuis" },
+                options: {
+                  type: Type.ARRAY,
+                  items: { type: Type.STRING },
+                  description: "4 pilihan jawaban (opsi)"
+                },
+                answerIndex: { type: Type.INTEGER, description: "Indeks jawaban yang benar (0-3)" },
+                explanation: { type: Type.STRING, description: "Catatan manis atau tips romantis" }
               },
-              answerIndex: { type: Type.INTEGER, description: "Indeks jawaban yang benar (0-3)" },
-              explanation: { type: Type.STRING, description: "Catatan manis atau tips romantis" }
-            },
-            required: ["question", "options", "answerIndex", "explanation"]
+              required: ["question", "options", "answerIndex", "explanation"]
+            }
           }
         }
-      }
-    });
+      }),
+      4000
+    );
 
     if (response.text) {
       const data = JSON.parse(response.text.trim());
@@ -253,7 +288,7 @@ Berikan 4 pilihan jawaban yang lucu dan relevan, sertakan indeks jawaban yang be
     throw new Error("No response text from Gemini");
 
   } catch (error: any) {
-    console.error("Gemini Quiz Error:", error.message);
+    console.error("Gemini Quiz Error:", error?.message || error || "Unknown error");
     // Custom romantic fallbacks
     const fallbackQuizzes = {
       "Kebiasaan & Kesukaan": [
@@ -359,33 +394,36 @@ Gunakan Bahasa Indonesia yang kasual, hangat, penuh semangat, dan interaktif.`;
 
   try {
     const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      throw new Error("Missing API Key");
+    if (!isValidGeminiApiKey(apiKey)) {
+      throw new Error("Invalid or Missing API Key");
     }
 
     const ai = getGeminiClient();
-    const response = await ai.models.generateContent({
-      model: "gemini-3.5-flash",
-      contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.ARRAY,
-          description: "Daftar ide kencan virtual romantis LDR",
-          items: {
-            type: Type.OBJECT,
-            properties: {
-              title: { type: Type.STRING, description: "Judul kegiatan kencan" },
-              activity: { type: Type.STRING, description: "Penjelasan lengkap aktivitas seru" },
-              preparation: { type: Type.STRING, description: "Apa saja yang perlu disiapkan masing-masing" },
-              duration: { type: Type.STRING, description: "Estimasi durasi (misalnya: 1 Jam)" },
-              cost: { type: Type.STRING, description: "Perkiraan biaya (misal: Gratis / Murah)" }
-            },
-            required: ["title", "activity", "preparation", "duration", "cost"]
+    const response = await runWithTimeout(
+      ai.models.generateContent({
+        model: "gemini-3.5-flash",
+        contents: prompt,
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.ARRAY,
+            description: "Daftar ide kencan virtual romantis LDR",
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                title: { type: Type.STRING, description: "Judul kegiatan kencan" },
+                activity: { type: Type.STRING, description: "Penjelasan lengkap aktivitas seru" },
+                preparation: { type: Type.STRING, description: "Apa saja yang perlu disiapkan masing-masing" },
+                duration: { type: Type.STRING, description: "Estimasi durasi (misalnya: 1 Jam)" },
+                cost: { type: Type.STRING, description: "Perkiraan biaya (misal: Gratis / Murah)" }
+              },
+              required: ["title", "activity", "preparation", "duration", "cost"]
+            }
           }
         }
-      }
-    });
+      }),
+      4000
+    );
 
     if (response.text) {
       const data = JSON.parse(response.text.trim());
@@ -394,7 +432,7 @@ Gunakan Bahasa Indonesia yang kasual, hangat, penuh semangat, dan interaktif.`;
     throw new Error("No response text from Gemini");
 
   } catch (error: any) {
-    console.error("Gemini Date Idea Error:", error.message);
+    console.error("Gemini Date Idea Error:", error?.message || error || "Unknown error");
     const fallbackDates = [
       {
         title: "Kencan 'Mukbang' Misteri",
